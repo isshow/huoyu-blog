@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>火羽 · 个人博客</title>
+  <meta name="description" content="火羽 —— 一个记录技术、设计与生活的个人博客。" />
+  <link rel="alternate" type="application/rss+xml" title="火羽 · RSS" href="feed.xml" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link id="hljs-theme" rel="stylesheet" href="css/highlight.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#/" class="brand">
+        <span class="brand-mark">火</span>
+        <span class="brand-name">火羽</span>
+      </a>
+      <nav class="nav">
+        <a href="#/" data-nav="home">文章</a>
+        <a href="#/tags" data-nav="tags">标签</a>
+        <a href="#/archive" data-nav="archive">归档</a>
+        <a href="#/about" data-nav="about">关于</a>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="切换深浅色">🌙</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="searchbar container">
+    <input id="search-input" type="search" placeholder="搜索文章标题、标签、正文…" autocomplete="off" />
+  </div>
+
+  <main class="container" id="app">
+    <div class="loading">加载中…</div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span id="year"></span> 火羽 · Fire Feather</span>
+      <span class="dot">·</span>
+      <span>用纯静态站点搭建，可部署到任意平台</span>
+      <span class="dot">·</span>
+      <a href="feed.xml">RSS</a>
+    </div>
+  </footer>
+
+  <script src="js/marked.min.js"></script>
+  <script src="js/purify.min.js"></script>
+  <script src="js/highlight.min.js"></script>
+  <script src="js/posts-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

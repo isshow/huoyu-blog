@@ -1,0 +1,46 @@
+[
+  {
+    "id": "hello-fire-feather",
+    "title": "你好，火羽",
+    "date": "2026-07-20",
+    "tags": [
+      "随笔",
+      "公告"
+    ],
+    "excerpt": "火羽是我新的个人空间。这里记录技术、设计与一点点生活。",
+    "file": "hello-fire-feather.md"
+  },
+  {
+    "id": "compose-vs-xml",
+    "title": "Jetpack Compose 与 XML 布局的取舍",
+    "date": "2026-07-18",
+    "tags": [
+      "Android",
+      "前端"
+    ],
+    "excerpt": "声明式 UI 不是银弹。从可维护性、性能与团队成本聊聊真实项目里的选择。",
+    "file": "compose-vs-xml.md"
+  },
+  {
+    "id": "static-blog",
+    "title": "用纯静态站点搭建个人博客",
+    "date": "2026-07-12",
+    "tags": [
+      "前端",
+      "工具"
+    ],
+    "excerpt": "不依赖数据库、不需要构建，也能做一个干净、可部署到任意平台的博客。",
+    "file": "static-blog.md"
+  },
+  {
+    "id": "dexkit-hook",
+    "title": "对抗 R8 混淆：DexKit 运行时反混淆实践",
+    "date": "2026-07-05",
+    "tags": [
+      "Android",
+      "逆向"
+    ],
+    "excerpt": "硬编码类名在 Release 包里会失效。用 DexKit 在运行时定位目标方法才是正解。",
+    "file": "dexkit-hook.md"
+  }
+]
