@@ -110,11 +110,16 @@
 
   async function loadPosts() {
     if (loaded) return POSTS;
-    if (window.POSTS_DATA && Array.isArray(window.POSTS_DATA)) {
-      POSTS = window.POSTS_DATA.slice();        // 内联数据：支持 file:// 双击打开
-    } else {
-      const res = await fetch('data/posts.json'); // 兜底：经服务器访问时仍可用
-      POSTS = await res.json();
+    // 在线优先：data/posts.json（含正文全文，由管理后台/GitHub 更新，Cloudflare 自动部署）
+    try {
+      const res = await fetch('data/posts.json', { cache: 'no-cache' });
+      if (res.ok) POSTS = await res.json();
+      else if (window.POSTS_DATA) POSTS = window.POSTS_DATA.slice();
+      else throw new Error('无法获取文章数据');
+    } catch (e) {
+      // 离线/双击打开：回退到内联数据
+      if (window.POSTS_DATA) POSTS = window.POSTS_DATA.slice();
+      else throw e;
     }
     POSTS.sort((a, b) => (a.date < b.date ? 1 : -1)); // 新到旧
     loaded = true;

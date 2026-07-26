@@ -3,6 +3,8 @@
 .cfignore
 .gitignore
 README.md
-tools
-data
-posts
+# 排除本地构建/部署脚本（tools/），保留可在线访问的管理页面（根 admin/）
+tools/*
+!admin
+!admin/index.html
+

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>火羽 · 在线管理</title>
+<style>
+  :root {
+    --bg: #fafafa; --panel: #ffffff; --border: #e9ecef; --text: #212529;
+    --muted: #868e96; --accent: #ff7a45; --accent-soft: #fff1e8; --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+  }
+  header {
+    padding: 14px 22px; border-bottom: 1px solid var(--border); background: var(--panel);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  header h1 .feather { color: var(--accent); }
+  .cfg { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .cfg input {
+    padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px;
+    font-family: inherit; background: #fff;
+  }
+  .cfg input.token { width: 280px; }
+  .cfg .repo { color: var(--muted); font-size: 12px; }
+  .status { font-size: 12px; color: var(--muted); }
+  .layout { display: flex; height: calc(100vh - 110px); }
+  .sidebar {
+    width: 270px; min-width: 270px; border-right: 1px solid var(--border);
+    background: var(--panel); display: flex; flex-direction: column;
+  }
+  .side-actions { padding: 12px; border-bottom: 1px solid var(--border); }
+  .post-list { overflow-y: auto; flex: 1; }
+  .post-item { padding: 11px 14px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .post-item:hover { background: var(--accent-soft); }
+  .post-item.active { background: var(--accent-soft); border-left: 3px solid var(--accent); padding-left: 11px; }
+  .post-item .t { font-weight: 600; margin-bottom: 3px; }
+  .post-item .m { color: var(--muted); font-size: 12px; }
+  .editor { flex: 1; padding: 20px 24px; overflow-y: auto; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .field input, .field textarea {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; background: #fff; color: var(--text);
+  }
+  .field input:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
+  .field textarea.content { min-height: 340px; resize: vertical; font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 13px; line-height: 1.6; }
+  .row { display: flex; gap: 14px; }
+  .row .field { flex: 1; }
+  .actions { display: flex; gap: 10px; margin-top: 6px; }
+  button {
+    border: none; border-radius: 8px; padding: 9px 16px; font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.05); }
+  .btn-ghost { background: #f1f3f5; color: var(--text); }
+  .btn-ghost:hover { background: #e9ecef; }
+  .btn-danger { background: #fff0f0; color: #e03131; }
+  .btn-danger:hover { background: #ffe3e3; }
+  #preview {
+    border: 1px dashed var(--border); border-radius: 8px; padding: 16px; display: none; background: #fff;
+  }
+  #preview h1,#preview h2,#preview h3 { margin-top: .6em; }
+  #preview pre { background:#f6f8fa; padding:14px; border-radius:8px; overflow:auto; }
+  #preview code { background:#f3f4f6; padding:2px 5px; border-radius:4px; font-size:.9em; }
+  #preview pre code { background:none; padding:0; }
+  .hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; line-height: 1.6; }
+  .hint code { background:#f1f3f5; padding:1px 5px; border-radius:4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="feather">🔥</span> 火羽 · 在线管理</h1>
+  <div class="cfg">
+    <input class="token" id="f-token" type="password" placeholder="GitHub Token（有 repo 权限）" />
+    <span class="repo" id="repo-label">isshow/huoyu-blog @ main</span>
+    <button class="btn-ghost" id="btn-cfg">保存配置</button>
+    <span class="status" id="status">就绪</span>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="side-actions">
+      <button class="btn-primary" id="btn-new" style="width:100%">+ 新建文章</button>
+    </div>
+    <div class="post-list" id="post-list"></div>
+  </aside>
+
+  <main class="editor">
+    <input type="hidden" id="f-id" />
+    <div class="row">
+      <div class="field">
+        <label>标题</label>
+        <input id="f-title" placeholder="文章标题" />
+      </div>
+      <div class="field" style="max-width:180px">
+        <label>日期</label>
+        <input id="f-date" type="date" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>标签（逗号分隔）</label>
+        <input id="f-tags" placeholder="Android, 逆向" />
+      </div>
+      <div class="field">
+        <label>摘要</label>
+        <input id="f-excerpt" placeholder="一句话摘要" />
+      </div>
+    </div>
+    <div class="field">
+      <label>正文（Markdown）</label>
+      <textarea id="f-content" class="content" placeholder="在此用 Markdown 写作…"></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" id="btn-save">保存并发布</button>
+      <button class="btn-ghost" id="btn-preview">预览</button>
+      <button class="btn-danger" id="btn-delete">删除</button>
+    </div>
+    <p class="hint">
+      保存即写回 GitHub 仓库 <code>isshow/huoyu-blog</code>，Cloudflare 随后自动重新部署（约 1 分钟）。<br>
+      Token 仅保存在你本机浏览器（localStorage），只用于直连 <code>api.github.com</code>。建议使用
+      <b>fine-grained token</b>，仅授权此仓库、勾选 Contents 读写权限，降低泄露风险。
+    </p>
+    <div id="preview" style="margin-top:16px"></div>
+  </main>
+</div>
+
+<script src="../js/marked.min.js"></script>
+<script src="../js/purify.min.js"></script>
+<script src="../js/highlight.min.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  function setStatus(t) { $('status').textContent = t; }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+  }
+
+  const CFG = { owner: 'isshow', repo: 'huoyu-blog', branch: 'main' };
+  let TOKEN = localStorage.getItem('huoyu-gh-token') || '';
+  let POSTS = [];
+  let currentId = null;
+
+  // base64（兼容中文）
+  function b64(str) { return btoa(unescape(encodeURIComponent(str))); }
+  function ub64(b) { return decodeURIComponent(escape(atob(b))); }
+
+  // GitHub Contents API
+  async function gh(method, path, body) {
+    const r = await fetch('https://api.github.com/repos/' + CFG.owner + '/' + CFG.repo + '/contents/' + path, {
+      method,
+      headers: {
+        'Authorization': 'Bearer ' + TOKEN,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      throw new Error(method + ' ' + path + ' -> ' + r.status + ' ' + t.slice(0, 200));
+    }
+    return r.status === 204 ? null : r.json();
+  }
+
+  function splitTags(s) {
+    return (s || '').split(',').map(t => t.trim()).filter(Boolean);
+  }
+  function genId(date) {
+    let base = 'post-' + String(date || '').replace(/-/g, '');
+    if (!POSTS.find(p => p.id === base)) return base;
+    return base + '-' + Math.random().toString(36).slice(2, 6);
+  }
+
+  // 读取列表：先试公开 raw（无需 token），失败且已填 token 则走 API
+  async function loadList(activeId) {
+    setStatus('加载列表…');
+    let data;
+    try {
+      const r = await fetch(
+        'https://raw.githubusercontent.com/' + CFG.owner + '/' + CFG.repo + '/' + CFG.branch + '/data/posts.json',
+        { cache: 'no-cache' });
+      if (!r.ok) throw 0;
+      data = await r.json();
+    } catch (e) {
+      if (!TOKEN) { setStatus('读取失败：请填写 GitHub Token'); return; }
+      const f = await gh('GET', 'data/posts.json');
+      data = JSON.parse(ub64(f.content));
+    }
+    POSTS = data;
+    renderList(activeId);
+    setStatus('就绪 · 共 ' + POSTS.length + ' 篇');
+  }
+
+  function renderList(activeId) {
+    $('post-list').innerHTML = POSTS.map(p => `
+      <div class="post-item ${p.id === activeId ? 'active' : ''}" data-id="${p.id}">
+        <div class="t">${esc(p.title)}</div>
+        <div class="m">${esc(p.date)} · ${esc((p.tags || []).join(', '))}</div>
+      </div>`).join('');
+    $('post-list').querySelectorAll('.post-item').forEach(el => {
+      el.onclick = () => selectPost(el.dataset.id);
+    });
+  }
+
+  function selectPost(id) {
+    const meta = POSTS.find(p => p.id === id);
+    if (!meta) return;
+    currentId = id;
+    $('f-id').value = meta.id;
+    $('f-title').value = meta.title || '';
+    $('f-date').value = meta.date || '';
+    $('f-tags').value = (meta.tags || []).join(', ');
+    $('f-excerpt').value = meta.excerpt || '';
+    $('f-content').value = meta.content || '';
+    $('preview').style.display = 'none';
+    $('preview').innerHTML = '';
+    renderList(id);
+  }
+
+  function newPost() {
+    currentId = null;
+    $('f-id').value = '';
+    $('f-title').value = '';
+    $('f-date').value = new Date().toISOString().slice(0, 10);
+    $('f-tags').value = '';
+    $('f-excerpt').value = '';
+    $('f-content').value = '';
+    $('preview').style.display = 'none';
+    $('preview').innerHTML = '';
+    renderList();
+  }
+
+  async function save() {
+    const title = $('f-title').value.trim();
+    if (!title) { alert('标题不能为空'); return; }
+    if (!TOKEN) { alert('请先在顶部填写 GitHub Token'); return; }
+    const date = $('f-date').value.trim();
+    const tags = splitTags($('f-tags').value);
+    const excerpt = $('f-excerpt').value.trim();
+    const content = $('f-content').value;
+    const id = currentId || genId(date);
+    const file = currentId
+      ? (POSTS.find(p => p.id === currentId) || {}).file || (id + '.md')
+      : (id + '.md');
+    const meta = { id, title, date, tags, excerpt, file, content };
+
+    setStatus('保存中…');
+    try {
+      // 1) data/posts.json（单一数据源，含正文）
+      const listFile = await gh('GET', 'data/posts.json');
+      let list = JSON.parse(ub64(listFile.content));
+      list = currentId ? list.map(p => p.id === currentId ? meta : p) : [meta, ...list];
+      await gh('PUT', 'data/posts.json', {
+        message: 'posts: ' + title,
+        content: b64(JSON.stringify(list, null, 2)),
+        sha: listFile.sha
+      });
+      // 2) posts/<file>.md（仓库存档）
+      const mdPath = 'posts/' + file;
+      try {
+        const mdf = await gh('GET', mdPath);
+        await gh('PUT', mdPath, { message: 'md: ' + file, content: b64(content), sha: mdf.sha });
+      } catch (e) { await gh('PUT', mdPath, { message: 'md: ' + file, content: b64(content) }); }
+      // 3) js/posts-data.js（离线/双击一致）
+      const dataJs = 'window.POSTS_DATA = ' + JSON.stringify(list, null, 2).replace(/<\//g, '<\\/') + ';\n';
+      try {
+        const df = await gh('GET', 'js/posts-data.js');
+        await gh('PUT', 'js/posts-data.js', { message: 'rebuild posts-data.js', content: b64(dataJs), sha: df.sha });
+      } catch (e) { await gh('PUT', 'js/posts-data.js', { message: 'rebuild posts-data.js', content: b64(dataJs) }); }
+
+      POSTS = list;
+      currentId = id;
+      $('f-id').value = id;
+      renderList(id);
+      setStatus('已保存并发布 ✓ 等待 Cloudflare 重新部署');
+    } catch (e) {
+      setStatus('失败：' + e.message);
+    }
+  }
+
+  async function del() {
+    if (!currentId) { alert('没有选中文章'); return; }
+    if (!TOKEN) { alert('请先填写 GitHub Token'); return; }
+    if (!confirm('确定删除这篇文章？此操作不可恢复。')) return;
+    setStatus('删除中…');
+    try {
+      const listFile = await gh('GET', 'data/posts.json');
+      let list = JSON.parse(ub64(listFile.content));
+      const meta = list.find(p => p.id === currentId);
+      list = list.filter(p => p.id !== currentId);
+      await gh('PUT', 'data/posts.json', {
+        message: 'del: ' + currentId,
+        content: b64(JSON.stringify(list, null, 2)),
+        sha: listFile.sha
+      });
+      if (meta && meta.file) {
+        try { const mdf = await gh('GET', 'posts/' + meta.file); await gh('DELETE', 'posts/' + meta.file, { message: 'del: ' + meta.file, sha: mdf.sha }); } catch (e) {}
+      }
+      const dataJs = 'window.POSTS_DATA = ' + JSON.stringify(list, null, 2).replace(/<\//g, '<\\/') + ';\n';
+      try { const df = await gh('GET', 'js/posts-data.js'); await gh('PUT', 'js/posts-data.js', { message: 'rebuild', content: b64(dataJs), sha: df.sha }); } catch (e) {}
+      setStatus('已删除并发布 ✓');
+      newPost();
+      await loadList();
+    } catch (e) {
+      setStatus('删除失败：' + e.message);
+    }
+  }
+
+  function preview() {
+    const box = $('preview');
+    if (box.style.display === 'block') { box.style.display = 'none'; return; }
+    const raw = marked.parse($('f-content').value);
+    box.innerHTML = DOMPurify.sanitize(raw);
+    box.querySelectorAll('pre code').forEach(b => { try { hljs.highlightElement(b); } catch (e) {} });
+    box.style.display = 'block';
+  }
+
+  function saveCfg() {
+    TOKEN = $('f-token').value.trim();
+    localStorage.setItem('huoyu-gh-token', TOKEN);
+    setStatus(TOKEN ? '配置已保存 ✓' : '已清除 Token');
+  }
+
+  $('btn-new').onclick = newPost;
+  $('btn-save').onclick = save;
+  $('btn-delete').onclick = del;
+  $('btn-preview').onclick = preview;
+  $('btn-cfg').onclick = saveCfg;
+
+  $('f-token').value = TOKEN;
+  marked.setOptions({ gfm: true, breaks: false, headerIds: true, mangle: false });
+  loadList();
+</script>
+</body>
+</html>

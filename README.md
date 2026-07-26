@@ -47,8 +47,8 @@ blog/
 │   ├── build.js          将 posts.json + posts/*.md 内联成 js/posts-data.js
 │   ├── build-rss.js      生成 feed.xml（改前需设置 SITE_URL）
 │   ├── new-post.js       新建文章的命令行助手
-│   ├── admin.js          本地管理后台服务（Node 零依赖）
-│   ├── admin/index.html  管理界面（浏览器访问）
+│   ├── admin.js          本地管理后端（备选，已被在线版取代）
+│   ├── admin/index.html  在线管理页面（部署后访问 /admin）
 │   ├── deploy.sh         备选：一键部署到 GitHub Pages（gh-pages 分支）
 │   └── deploy-cf.sh      备选：直接上传到 Cloudflare Pages（不经 GitHub）
 ├── feed.xml              RSS 订阅源（由 build-rss.js 生成）
@@ -95,23 +95,24 @@ node tools/new-post.js --title "我的新文章" --tags "Android,逆向" --date 
    ```
 3. 重新构建（见下）。
 
-## 本地管理后台（推荐日常使用）
+## 在线管理后台（任意设备浏览器，推荐）
 
-嫌命令行麻烦，用自带的可视化后台：浏览器里写/改文章，点「保存」自动重建，点「发布」自动上线。
+不想只在本地写文章？管理后台是纯前端页面，靠 GitHub API 直接写仓库，已随站点部署到 `https://blog.19941017.xyz/admin/`（仓库根目录下的 `admin/index.html`）。任何有网的地方开浏览器、登一下 Token 即可写文章，保存即发布。
 
-```bash
-node tools/admin.js
-```
+**首次使用**
+1. 打开 `https://blog.19941017.xyz/admin/`。
+2. 顶部填 **GitHub Token**（有 `repo` 权限），点「保存配置」记住（存浏览器本地）。
+   - 安全建议：用 **fine-grained token**，仅授权 `isshow/huoyu-blog` 仓库、勾选 Contents 读写，泄露面最小。
+3. 列表自动从仓库读取，点文章即编辑，「+ 新建文章」开空白稿。
 
-浏览器打开 http://127.0.0.1:8787/ ：
+**写文章**
+- 填标题 / 日期 / 标签 / 摘要 / 正文（Markdown），「预览」实时渲染。
+- 「保存并发布」写回 `data/posts.json`（含正文）+ `posts/*.md` + 内联 `js/posts-data.js`，Cloudflare 检测到提交后自动重新部署（约 1 分钟）。
+- 「删除」移除该文章并重新发布。
 
-- 左侧文章列表，点选即编辑；「+ 新建文章」开空白稿。
-- 右侧表单：标题 / 日期 / 标签 / 摘要 / 正文（Markdown），「预览」实时渲染。
-- 「保存」自动重建内联数据（等效 build.js + build-rss.js）。
-- 「发布」执行 git add / commit / push，Cloudflare 随后自动重新部署。
+> Token 只直连 `api.github.com`，不经过任何第三方，仅存于你本机浏览器。换设备 / 清缓存需重新填 Token。
 
-> 后台仅监听 127.0.0.1（本机），关闭终端即停止，不暴露公网。
-> 发布需本机已配 git 凭证（macOS：`git config --global credential.helper osxkeychain`）。
+本地想用也行：直接双击打开 `tools/admin/index.html`（填 Token 即可，不依赖本地服务器）。
 
 ---
 
