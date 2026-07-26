@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.join(__dirname, '..');
-const SITE_URL = 'https://huoyu.blog'; // ← 改成你的域名
+const SITE_URL = 'https://blog.19941017.xyz'; // 部署域名
 const metaPath = path.join(root, 'data', 'posts.json');
 const outPath = path.join(root, 'feed.xml');
 

@@ -1,0 +1,8 @@
+# Cloudflare Pages 部署时排除开发/非前端文件（wrangler 会自动读取此文件）
+.git
+.cfignore
+.gitignore
+README.md
+tools
+data
+posts

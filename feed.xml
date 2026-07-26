@@ -2,44 +2,37 @@
 <rss version="2.0">
   <channel>
     <title>火羽 · 个人博客</title>
-    <link>https://huoyu.blog/</link>
+    <link>https://blog.19941017.xyz/</link>
     <description>记录技术、设计与生活的个人博客</description>
     <language>zh-CN</language>
-    <lastBuildDate>Sat, 25 Jul 2026 02:57:55 GMT</lastBuildDate>
+    <lastBuildDate>Sun, 26 Jul 2026 09:13:29 GMT</lastBuildDate>
     <item>
       <title>你好，火羽</title>
-      <link>https://huoyu.blog/#/post/hello-fire-feather</link>
-      <guid isPermaLink="false">https://huoyu.blog/#/post/hello-fire-feather</guid>
+      <link>https://blog.19941017.xyz/#/post/hello-fire-feather</link>
+      <guid isPermaLink="false">https://blog.19941017.xyz/#/post/hello-fire-feather</guid>
       <pubDate>Mon, 20 Jul 2026 00:00:00 GMT</pubDate>
       <description>火羽是我新的个人空间。这里记录技术、设计与一点点生活。</description>
     </item>
     <item>
       <title>Jetpack Compose 与 XML 布局的取舍</title>
-      <link>https://huoyu.blog/#/post/compose-vs-xml</link>
-      <guid isPermaLink="false">https://huoyu.blog/#/post/compose-vs-xml</guid>
+      <link>https://blog.19941017.xyz/#/post/compose-vs-xml</link>
+      <guid isPermaLink="false">https://blog.19941017.xyz/#/post/compose-vs-xml</guid>
       <pubDate>Sat, 18 Jul 2026 00:00:00 GMT</pubDate>
       <description>声明式 UI 不是银弹。从可维护性、性能与团队成本聊聊真实项目里的选择。</description>
     </item>
     <item>
       <title>用纯静态站点搭建个人博客</title>
-      <link>https://huoyu.blog/#/post/static-blog</link>
-      <guid isPermaLink="false">https://huoyu.blog/#/post/static-blog</guid>
+      <link>https://blog.19941017.xyz/#/post/static-blog</link>
+      <guid isPermaLink="false">https://blog.19941017.xyz/#/post/static-blog</guid>
       <pubDate>Sun, 12 Jul 2026 00:00:00 GMT</pubDate>
       <description>不依赖数据库、不需要构建，也能做一个干净、可部署到任意平台的博客。</description>
     </item>
     <item>
       <title>对抗 R8 混淆：DexKit 运行时反混淆实践</title>
-      <link>https://huoyu.blog/#/post/dexkit-hook</link>
-      <guid isPermaLink="false">https://huoyu.blog/#/post/dexkit-hook</guid>
+      <link>https://blog.19941017.xyz/#/post/dexkit-hook</link>
+      <guid isPermaLink="false">https://blog.19941017.xyz/#/post/dexkit-hook</guid>
       <pubDate>Sun, 05 Jul 2026 00:00:00 GMT</pubDate>
       <description>硬编码类名在 Release 包里会失效。用 DexKit 在运行时定位目标方法才是正解。</description>
-    </item>
-    <item>
-      <title>临时测试文章</title>
-      <link>https://huoyu.blog/#/post/post-20260725</link>
-      <guid isPermaLink="false">https://huoyu.blog/#/post/post-20260725</guid>
-      <pubDate>Sat, 25 Jul 2026 00:00:00 GMT</pubDate>
-      <description></description>
     </item>
   </channel>
 </rss>
