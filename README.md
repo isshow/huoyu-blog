@@ -47,7 +47,8 @@ blog/
 │   ├── build.js          将 posts.json + posts/*.md 内联成 js/posts-data.js
 │   ├── build-rss.js      生成 feed.xml（改前需设置 SITE_URL）
 │   ├── new-post.js       新建文章的命令行助手
-│   └── deploy.sh         一键构建并部署到 GitHub Pages
+│   ├── deploy.sh         备选：一键部署到 GitHub Pages（gh-pages 分支）
+│   └── deploy-cf.sh      备选：直接上传到 Cloudflare Pages（不经 GitHub）
 ├── feed.xml              RSS 订阅源（由 build-rss.js 生成）
 └── README.md
 ```
@@ -140,16 +141,42 @@ Giscus 基于 GitHub Discussions，纯前端、无需自建服务。默认关闭
 
 ---
 
-## 部署到 GitHub Pages
+## 部署（GitHub + Cloudflare Pages，推荐）
 
-1. 改 `tools/build-rss.js` 里的 `SITE_URL` 为你的 Pages 地址（如 `https://your-name.github.io/blog`）。
-2. 初始化 git 仓库并加好 `origin` remote。
-3. 运行：
+免费、自动 HTTPS、全球 CDN，且能绑定你自己的域名 `blog.19941017.xyz`。
+代码托管在 GitHub，Cloudflare 连 GitHub 后 **git push 即自动上线**，无需手动跑命令。
+
+### 一次性准备
+1. 在 GitHub 新建一个**空**公开仓库（建议名 `huoyu-blog`，不要勾 Initialize README）。
+2. 本地关联并首次推送（把 `<用户名>` 换成你的 GitHub 用户名）：
    ```bash
-   bash tools/deploy.sh
+   git remote add origin https://github.com/<用户名>/huoyu-blog.git
+   git branch -M main
+   git push -u origin main
    ```
-   脚本会：构建 → 提交 → 用 `gh-pages` 分支发布。
-4. 仓库 Settings → Pages → Source 选 `gh-pages` 分支。
+3. 登录 Cloudflare（免费）→ **Workers & Pages → Create → Pages → 连接到 Git**，
+   选你的 `huoyu-blog` 仓库。
+   - Framework preset：**None**
+   - Build command：**留空**（内联数据 `js/posts-data.js` 与 `feed.xml` 已提交进仓库）
+   - Build output directory：**`/`**（仓库根即站点）
+4. 部署完成后进项目 **Custom domains → 添加 `blog.19941017.xyz`**。
+5. 在你**买域名的平台后台**加一条解析：
+   - 类型 **CNAME**，名称（主机记录）`blog`，目标（记录值）`huoyu-blog.pages.dev`
+6. 等几分钟，HTTPS 自动签发，访问 `https://blog.19941017.xyz` 即可。
+
+### 以后更新文章
+改完 Markdown / `posts.json` 后：
+```bash
+node tools/build.js && node tools/build-rss.js
+git add -A && git commit -m "更新文章" && git push
+```
+Cloudflare 检测到 push 会自动重新部署。
+
+> 顺带：Giscus 评论（见上章节）正好用这个 GitHub 仓库，按 README 填 `repo` 即可启用，无需额外平台。
+
+### 备选部署方式
+- **纯 GitHub Pages（不用 Cloudflare）**：`bash tools/deploy.sh`，再到仓库 Settings → Pages 选 `gh-pages` 分支；自定义域名在 Pages 设置里填，同样免费 HTTPS。
+- **Cloudflare 直接上传（不经 GitHub）**：`bash tools/deploy-cf.sh`（需先 `npx wrangler login`）。
 
 ---
 
