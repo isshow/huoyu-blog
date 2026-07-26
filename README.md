@@ -47,6 +47,8 @@ blog/
 │   ├── build.js          将 posts.json + posts/*.md 内联成 js/posts-data.js
 │   ├── build-rss.js      生成 feed.xml（改前需设置 SITE_URL）
 │   ├── new-post.js       新建文章的命令行助手
+│   ├── admin.js          本地管理后台服务（Node 零依赖）
+│   ├── admin/index.html  管理界面（浏览器访问）
 │   ├── deploy.sh         备选：一键部署到 GitHub Pages（gh-pages 分支）
 │   └── deploy-cf.sh      备选：直接上传到 Cloudflare Pages（不经 GitHub）
 ├── feed.xml              RSS 订阅源（由 build-rss.js 生成）
@@ -92,6 +94,24 @@ node tools/new-post.js --title "我的新文章" --tags "Android,逆向" --date 
    }
    ```
 3. 重新构建（见下）。
+
+## 本地管理后台（推荐日常使用）
+
+嫌命令行麻烦，用自带的可视化后台：浏览器里写/改文章，点「保存」自动重建，点「发布」自动上线。
+
+```bash
+node tools/admin.js
+```
+
+浏览器打开 http://127.0.0.1:8787/ ：
+
+- 左侧文章列表，点选即编辑；「+ 新建文章」开空白稿。
+- 右侧表单：标题 / 日期 / 标签 / 摘要 / 正文（Markdown），「预览」实时渲染。
+- 「保存」自动重建内联数据（等效 build.js + build-rss.js）。
+- 「发布」执行 git add / commit / push，Cloudflare 随后自动重新部署。
+
+> 后台仅监听 127.0.0.1（本机），关闭终端即停止，不暴露公网。
+> 发布需本机已配 git 凭证（macOS：`git config --global credential.helper osxkeychain`）。
 
 ---
 

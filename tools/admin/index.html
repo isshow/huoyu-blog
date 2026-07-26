@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>火羽 · 管理后台</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --panel: #ffffff;
+    --border: #e9ecef;
+    --text: #212529;
+    --muted: #868e96;
+    --accent: #ff7a45;
+    --accent-soft: #fff1e8;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+  }
+  header {
+    padding: 16px 22px; border-bottom: 1px solid var(--border);
+    background: var(--panel); display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  header h1 .feather { color: var(--accent); }
+  .layout { display: flex; height: calc(100vh - 57px); }
+  /* 左侧列表 */
+  .sidebar {
+    width: 260px; min-width: 260px; border-right: 1px solid var(--border);
+    background: var(--panel); display: flex; flex-direction: column;
+  }
+  .side-actions { padding: 12px; display: flex; gap: 8px; border-bottom: 1px solid var(--border); }
+  .post-list { overflow-y: auto; flex: 1; }
+  .post-item {
+    padding: 11px 14px; border-bottom: 1px solid var(--border); cursor: pointer;
+  }
+  .post-item:hover { background: var(--accent-soft); }
+  .post-item.active { background: var(--accent-soft); border-left: 3px solid var(--accent); padding-left: 11px; }
+  .post-item .t { font-weight: 600; margin-bottom: 3px; }
+  .post-item .m { color: var(--muted); font-size: 12px; }
+  /* 右侧编辑 */
+  .editor { flex: 1; padding: 20px 24px; overflow-y: auto; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .field input, .field textarea {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; background: #fff; color: var(--text);
+  }
+  .field input:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
+  .field textarea.content { min-height: 320px; resize: vertical; font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 13px; line-height: 1.6; }
+  .row { display: flex; gap: 14px; }
+  .row .field { flex: 1; }
+  .actions { display: flex; gap: 10px; margin-top: 6px; }
+  button {
+    border: none; border-radius: 8px; padding: 9px 16px; font-size: 14px; cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.05); }
+  .btn-ghost { background: #f1f3f5; color: var(--text); }
+  .btn-ghost:hover { background: #e9ecef; }
+  .btn-danger { background: #fff0f0; color: #e03131; }
+  .btn-danger:hover { background: #ffe3e3; }
+  .status { margin-left: auto; font-size: 12px; color: var(--muted); }
+  #preview {
+    border: 1px dashed var(--border); border-radius: 8px; padding: 16px; display: none;
+    background: #fff;
+  }
+  #preview h1,#preview h2,#preview h3 { margin-top: .6em; }
+  #preview pre { background:#f6f8fa; padding:14px; border-radius:8px; overflow:auto; }
+  #preview code { background:#f3f4f6; padding:2px 5px; border-radius:4px; font-size:.9em; }
+  #preview pre code { background:none; padding:0; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="feather">🔥</span> 火羽 · 管理后台</h1>
+  <span class="status" id="status">就绪</span>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="side-actions">
+      <button class="btn-primary" id="btn-new" style="flex:1">+ 新建文章</button>
+      <button class="btn-ghost" id="btn-publish">发布</button>
+    </div>
+    <div class="post-list" id="post-list"></div>
+  </aside>
+
+  <main class="editor">
+    <input type="hidden" id="f-id" />
+    <div class="row">
+      <div class="field">
+        <label>标题</label>
+        <input id="f-title" placeholder="文章标题" />
+      </div>
+      <div class="field" style="max-width:180px">
+        <label>日期</label>
+        <input id="f-date" type="date" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>标签（逗号分隔）</label>
+        <input id="f-tags" placeholder="Android, 逆向" />
+      </div>
+      <div class="field">
+        <label>摘要</label>
+        <input id="f-excerpt" placeholder="一句话摘要" />
+      </div>
+    </div>
+    <div class="field">
+      <label>正文（Markdown）</label>
+      <textarea id="f-content" class="content" placeholder="在此用 Markdown 写作…"></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" id="btn-save">保存</button>
+      <button class="btn-ghost" id="btn-preview">预览</button>
+      <button class="btn-danger" id="btn-delete">删除</button>
+    </div>
+    <div id="preview" style="margin-top:16px"></div>
+  </main>
+</div>
+
+<script src="/js/marked.min.js"></script>
+<script src="/js/purify.min.js"></script>
+<script src="/js/highlight.min.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  function setStatus(t) { $('status').textContent = t; }
+
+  async function loadList(activeId) {
+    const r = await fetch('/api/posts');
+    const { posts } = await r.json();
+    const box = $('post-list');
+    box.innerHTML = posts.map(p => `
+      <div class="post-item ${p.id === activeId ? 'active' : ''}" data-id="${p.id}">
+        <div class="t">${esc(p.title)}</div>
+        <div class="m">${esc(p.date)} · ${esc(p.tags.join(', '))}</div>
+      </div>`).join('');
+    box.querySelectorAll('.post-item').forEach(el => {
+      el.onclick = () => selectPost(el.dataset.id);
+    });
+  }
+
+  async function selectPost(id) {
+    const r = await fetch('/api/post?id=' + encodeURIComponent(id));
+    const { meta, content } = await r.json();
+    $('f-id').value = meta.id;
+    $('f-title').value = meta.title || '';
+    $('f-date').value = meta.date || '';
+    $('f-tags').value = (meta.tags || []).join(', ');
+    $('f-excerpt').value = meta.excerpt || '';
+    $('f-content').value = content || '';
+    $('preview').style.display = 'none';
+    $('preview').innerHTML = '';
+    loadList(id);
+  }
+
+  function newPost() {
+    $('f-id').value = '';
+    $('f-title').value = '';
+    $('f-date').value = new Date().toISOString().slice(0, 10);
+    $('f-tags').value = '';
+    $('f-excerpt').value = '';
+    $('f-content').value = '';
+    $('preview').style.display = 'none';
+    $('preview').innerHTML = '';
+    loadList();
+  }
+
+  async function save() {
+    const title = $('f-title').value.trim();
+    if (!title) { alert('标题不能为空'); return; }
+    const payload = {
+      id: $('f-id').value.trim(),
+      title,
+      date: $('f-date').value.trim(),
+      tags: $('f-tags').value.trim(),
+      excerpt: $('f-excerpt').value.trim(),
+      content: $('f-content').value
+    };
+    setStatus('保存中…');
+    const r = await fetch('/api/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const res = await r.json();
+    if (res.ok) {
+      $('f-id').value = res.id;
+      setStatus('已保存 ✓');
+      await loadList(res.id);
+    } else {
+      setStatus('保存失败：' + res.error);
+    }
+  }
+
+  async function del() {
+    const id = $('f-id').value.trim();
+    if (!id) { alert('没有选中文章'); return; }
+    if (!confirm('确定删除这篇文章？此操作不可恢复。')) return;
+    const r = await fetch('/api/post?id=' + encodeURIComponent(id), { method: 'DELETE' });
+    const res = await r.json();
+    if (res.ok) { setStatus('已删除 ✓'); newPost(); await loadList(); }
+    else setStatus('删除失败：' + res.error);
+  }
+
+  async function publish() {
+    const msg = prompt('提交说明：', 'update via admin') || 'update via admin';
+    setStatus('发布中…');
+    const r = await fetch('/api/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg })
+    });
+    const res = await r.json();
+    if (res.ok) setStatus('已发布 ✓ 等待 Cloudflare 重新部署');
+    else setStatus('发布失败：' + (res.error || ''));
+  }
+
+  function preview() {
+    const box = $('preview');
+    if (box.style.display === 'block') { box.style.display = 'none'; return; }
+    const raw = marked.parse($('f-content').value);
+    box.innerHTML = DOMPurify.sanitize(raw);
+    box.querySelectorAll('pre code').forEach(b => { try { hljs.highlightElement(b); } catch (e) {} });
+    box.style.display = 'block';
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+  }
+
+  $('btn-new').onclick = newPost;
+  $('btn-save').onclick = save;
+  $('btn-delete').onclick = del;
+  $('btn-preview').onclick = preview;
+  $('btn-publish').onclick = publish;
+
+  loadList();
+</script>
+</body>
+</html>
