@@ -1,5 +1,6 @@
-/* 火羽博客 —— 纯静态单页应用
- * 路由：hash 路由，无需后端
+/* 火羽博客 —— 单页应用（前端）
+ * 路由：hash 路由
+ * 数据：公开内容由后端 /api/posts 实时提供（发布即生效），失败时回退内联数据
  * 渲染：marked + DOMPurify + highlight.js
  */
 (function () {
@@ -110,16 +111,18 @@
 
   async function loadPosts() {
     if (loaded) return POSTS;
-    // 在线优先：data/posts.json（含正文全文，由管理后台/GitHub 更新，Cloudflare 自动部署）
+    // 在线优先：后端 API（动态读取，发布即生效）
     try {
-      const res = await fetch('data/posts.json', { cache: 'no-cache' });
-      if (res.ok) POSTS = await res.json();
-      else if (window.POSTS_DATA) POSTS = window.POSTS_DATA.slice();
-      else throw new Error('无法获取文章数据');
+      const res = await fetch('/api/posts', { cache: 'no-cache' });
+      if (res.ok) {
+        const data = await res.json();
+        POSTS = data.posts || [];
+      } else {
+        throw new Error('API ' + res.status);
+      }
     } catch (e) {
-      // 离线/双击打开：回退到内联数据
-      if (window.POSTS_DATA) POSTS = window.POSTS_DATA.slice();
-      else throw e;
+      // 回退：内联数据（边缘缓存失效/离线场景）
+      POSTS = (window.POSTS_DATA && Array.isArray(window.POSTS_DATA)) ? window.POSTS_DATA.slice() : [];
     }
     POSTS.sort((a, b) => (a.date < b.date ? 1 : -1)); // 新到旧
     loaded = true;
@@ -208,12 +211,20 @@
 
   async function renderPost(id) {
     setActiveNav('home');
-    const idx = POSTS.findIndex(p => p.id === id);
-    if (idx === -1) { app.innerHTML = `<div class="empty">文章不存在。<a href="#/">返回首页</a></div>`; return; }
-    const post = POSTS[idx];
+    let idx = POSTS.findIndex(p => p.id === id);
+    let post = idx >= 0 ? POSTS[idx] : null;
+    if (!post) {
+      // 列表中没有（草稿 / 深链）：直接拉取单篇
+      try {
+        const res = await fetch('/api/posts/' + encodeURIComponent(id), { cache: 'no-cache' });
+        if (res.ok) { const d = await res.json(); post = d.post || null; }
+      } catch (e) {}
+      if (!post) { app.innerHTML = `<div class="empty">文章不存在。<a href="#/">返回首页</a></div>`; return; }
+      idx = -1; // 直接拉取的没有上下文，不显示上下篇
+    }
     const views = bumpViews(post.id);
-    const older = POSTS[idx + 1] || null; // 时间上更早
-    const newer = POSTS[idx - 1] || null; // 时间上更新
+    const older = idx >= 0 ? POSTS[idx + 1] : null; // 时间上更早
+    const newer = idx >= 0 ? POSTS[idx - 1] : null; // 时间上更新
     const postNav = `
       <div class="post-nav">
         ${older ? `<a class="pn pn-prev" href="#/post/${older.id}"><span>上一篇</span><strong>${esc(older.title)}</strong></a>` : `<span class="pn pn-prev disabled"></span>`}
@@ -223,7 +234,7 @@
     try {
       const md = (post.content != null)
         ? post.content
-        : await fetch('posts/' + post.file).then(r => r.text());
+        : (post.file ? await fetch('posts/' + post.file).then(r => r.text()) : '');
       const dirty = marked.parse(md);
       const clean = DOMPurify.sanitize(dirty);
       app.innerHTML = `

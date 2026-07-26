@@ -38,19 +38,30 @@ blog/
 │   ├── marked.min.js     Markdown 解析（本地打包）
 │   ├── purify.min.js     XSS 防护（本地打包）
 │   ├── highlight.min.js  代码高亮（本地打包）
-│   └── posts-data.js     由工具生成：内联的文章元数据 + 正文
+│   └── posts-data.js     兜底用：内联文章数据（API 不可用时）
 ├── data/
-│   └── posts.json        文章元数据（标题 / 日期 / 标签 / 文件 / 摘要）
+│   └── posts.json        旧数据源（迁移到 D1 后仅作参考）
 ├── posts/
-│   └── *.md              文章正文（Markdown）
+│   └── *.md              旧正文（迁移到 D1 后仅作参考）
+├── functions/           Cloudflare Pages Functions（后端 API）
+│   ├── _lib/             auth.js / posts.js 共享模块
+│   ├── api/
+│   │   ├── setup.js      首次初始化管理员
+│   │   ├── auth/         login / logout / me
+│   │   ├── users.js      作者管理（仅管理员）
+│   │   └── posts.js      文章列表/新建；posts/[id].js 单篇增改删
+├── migrations/
+│   └── 0001_init.sql     D1 建表（users / sessions / posts）
 ├── tools/
-│   ├── build.js          将 posts.json + posts/*.md 内联成 js/posts-data.js
+│   ├── build.js          旧：内联 posts-data.js（D1 模式下不再需要）
 │   ├── build-rss.js      生成 feed.xml（改前需设置 SITE_URL）
-│   ├── new-post.js       新建文章的命令行助手
-│   ├── admin.js          本地管理后端（备选，已被在线版取代）
-│   ├── admin/index.html  在线管理页面（部署后访问 /admin）
+│   ├── new-post.js       旧：命令行新建文章（D1 模式用 /admin 即可）
+│   ├── seed.sql          迁移后导入已有 4 篇示例文章
 │   ├── deploy.sh         备选：一键部署到 GitHub Pages（gh-pages 分支）
 │   └── deploy-cf.sh      备选：直接上传到 Cloudflare Pages（不经 GitHub）
+├── wrangler.toml        Pages Functions + D1 绑定配置（填 database_id）
+├── admin/
+│   └── index.html        在线管理后台（部署后访问 /admin）
 ├── feed.xml              RSS 订阅源（由 build-rss.js 生成）
 └── README.md
 ```
@@ -97,35 +108,32 @@ node tools/new-post.js --title "我的新文章" --tags "Android,逆向" --date 
 
 ## 在线管理后台（任意设备浏览器，推荐）
 
-不想只在本地写文章？管理后台是纯前端页面，靠 GitHub API 直接写仓库，已随站点部署到 `https://blog.19941017.xyz/admin/`（仓库根目录下的 `admin/index.html`）。任何有网的地方开浏览器、登一下 Token 即可写文章，保存即发布。
+管理后台已升级为**完整 CMS**：不依赖 GitHub 账号，作者用本站账号即可写文章。已随站点部署到 `https://blog.19941017.xyz/admin/`（仓库根目录 `admin/index.html`）。任何有网的地方开浏览器、登录就能写，保存即时生效。
 
 **首次使用**
-1. 打开 `https://blog.19941017.xyz/admin/`。
-2. 顶部填 **GitHub Token**（有 `repo` 权限），点「保存配置」记住（存浏览器本地）。
-   - 安全建议：用 **fine-grained token**，仅授权 `isshow/huoyu-blog` 仓库、勾选 Contents 读写，泄露面最小。
-3. 列表自动从仓库读取，点文章即编辑，「+ 新建文章」开空白稿。
+1. 打开 `https://blog.19941017.xyz/admin/`，点「首次初始化」创建**管理员**账号（仅系统无账号时需要）。
+2. 用管理员登录后，在「作者管理」里给协作者建账号（邮箱 + 密码）。
+3. 协作者用账号密码登录即可写文章；列表自动从后端读取，点文章即编辑，「+ 新建文章」开空白稿。
 
 **写文章**
-- 填标题 / 日期 / 标签 / 摘要 / 正文（Markdown），「预览」实时渲染。
-- 「保存并发布」写回 `data/posts.json`（含正文）+ `posts/*.md` + 内联 `js/posts-data.js`，Cloudflare 检测到提交后自动重新部署（约 1 分钟）。
-- 「删除」移除该文章并重新发布。
+- 填标题 / 日期 / 标签 / 摘要 / 正文（Markdown），可勾「预览」实时渲染。
+- 「保存」写入 D1 数据库，公开站实时读取，**无需推代码、无需等部署**。
+- 状态可选「已发布 / 草稿」；「删」移除该文章（仅管理员）。
 
-> Token 只直连 `api.github.com`，不经过任何第三方，仅存于你本机浏览器。换设备 / 清缓存需重新填 Token。
+> 会话用 HttpOnly Cookie，密码经 PBKDF2 哈希存储，不依赖任何第三方登录。换设备 / 清缓存需重新登录。
 
-本地想用也行：直接双击打开 `tools/admin/index.html`（填 Token 即可，不依赖本地服务器）。
+本地调试：见上文「完整 CMS 后端 → 本地调试」用 `wrangler pages dev`。
 
 ---
 
-## 构建（内联 + RSS）
+## 构建（内联兜底 + RSS）
 
-修改文章、增删文章后必须重跑，否则线上仍是旧内容：
+> 在 D1 模式下，文章的增删改走 `/admin` 后台，**不再需要手动跑 build**。下面两条仅用于生成「离线兜底数据」和 RSS。
 
-```bash
-node tools/build.js       # 生成 js/posts-data.js（内联，支持双击打开）
-node tools/build-rss.js   # 生成 feed.xml
-```
+- `node tools/build.js`：把 `data/posts.json` + `posts/*.md` 内联成 `js/posts-data.js`。当后端 API 不可用时，公开站会回退到这份内联数据（保证极端情况下仍有内容）。
+- `node tools/build-rss.js`：生成 `feed.xml`。`build-rss.js` 顶部有 `SITE_URL` 常量，**请改成你的真实域名**，否则 RSS 里的链接不可用。
 
-`build-rss.js` 顶部有 `SITE_URL` 常量，**部署前请改成你的真实域名**，否则 RSS 里的链接不可用。
+若已全面切到 D1，可忽略 `build.js`；RSS 亦可后续改为由 Functions 动态生成（按需）。
 
 ---
 
@@ -186,14 +194,70 @@ Giscus 基于 GitHub Discussions，纯前端、无需自建服务。默认关闭
 6. 等几分钟，HTTPS 自动签发，访问 `https://blog.19941017.xyz` 即可。
 
 ### 以后更新文章
-改完 Markdown / `posts.json` 后：
-```bash
-node tools/build.js && node tools/build-rss.js
-git add -A && git commit -m "更新文章" && git push
-```
-Cloudflare 检测到 push 会自动重新部署。
+- **日常写/改文章**：直接打开 `https://blog.19941017.xyz/admin/`，登录后写，点「保存」即时生效（写入 D1，公开站实时读取），**无需改代码、无需推送**。
+- **只有改了前端/后端代码**（如 `js/`、`functions/`、`css/`）才需要推送：
+  ```bash
+  git add -A && git commit -m "更新代码" && git push
+  ```
+  Cloudflare 检测到 push 会自动重新部署。
 
 > 顺带：Giscus 评论（见上章节）正好用这个 GitHub 仓库，按 README 填 `repo` 即可启用，无需额外平台。
+
+---
+
+## 完整 CMS 后端（D1 + Cloudflare Pages Functions）
+
+公开站的内容现在由后端 API 实时提供（`/api/posts`），不再依赖静态 `posts.json`。
+作者无需 GitHub 账号：由**博主在后台创建账号**，作者登录即可写。
+
+### 架构
+- **Cloudflare Pages**：托管静态前端（`index.html` / `js` / `css` / `admin`）。
+- **Pages Functions**：`functions/api/*` 提供登录、文章、作者等接口（无服务器、免费额度内够用）。
+- **D1（SQLite）**：存用户、会话、文章。
+- **鉴权**：PBKDF2 密码哈希 + 会话 Cookie（HttpOnly）。无第三方登录依赖。
+
+### 首次上线后端（一次性）
+> 需要本机装 `wrangler`：`npm i -g wrangler` 并 `wrangler login`。
+
+1. **建 D1 数据库**
+   ```bash
+   wrangler d1 create huoyu-blog-db
+   ```
+   复制返回的 `database_id`，填进 `wrangler.toml` 的 `database_id`。
+
+2. **绑定到 Pages 项目**（Cloudflare 控制台 → 你的 Pages 项目 → Settings → Functions → D1 bindings）
+   - 变量名（binding）填 **`DB`**（必须与代码一致），选择刚建的 `huoyu-blog-db`。
+
+3. **建表**
+   ```bash
+   wrangler d1 migrations apply huoyu-blog-db --remote
+   ```
+
+4. **推送代码**（Functions 随仓库一起部署）
+   ```bash
+   git add -A && git commit -m "add CMS backend" && git push
+   ```
+
+5. **初始化管理员**（浏览器访问 `https://blog.19941017.xyz/admin/`，点「首次初始化」）
+   或在终端：
+   ```bash
+   curl -X POST https://blog.19941017.xyz/api/setup \
+     -H 'Content-Type: application/json' \
+     -d '{"email":"你@邮箱.com","password":"至少6位","display_name":"博主"}'
+   ```
+
+6. **导入已有 4 篇示例文章**（可选，保留旧内容）
+   ```bash
+   wrangler d1 execute huoyu-blog-db --remote --file=tools/seed.sql
+   ```
+
+完成后，访问 `/admin/` 用管理员账号登录；管理员在「作者管理」里给协作者建账号，对方用账号密码登录即可写文章。
+
+### 本地调试
+```bash
+wrangler pages dev . --d1 DB=huoyu-blog-db --local
+```
+会起一个带 Functions + 本地 D1 的本地服务（含 `/admin/`）。
 
 ### 备选部署方式
 - **纯 GitHub Pages（不用 Cloudflare）**：`bash tools/deploy.sh`，再到仓库 Settings → Pages 选 `gh-pages` 分支；自定义域名在 Pages 设置里填，同样免费 HTTPS。
