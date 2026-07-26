@@ -150,7 +150,7 @@ Giscus 基于 GitHub Discussions，纯前端、无需自建服务。默认关闭
 1. 在 GitHub 新建一个**空**公开仓库（建议名 `huoyu-blog`，不要勾 Initialize README）。
 2. 本地关联并首次推送（把 `<用户名>` 换成你的 GitHub 用户名）：
    ```bash
-   git remote add origin https://github.com/<用户名>/huoyu-blog.git
+   git remote add origin https://github.com/isshow/huoyu-blog.git
    git branch -M main
    git push -u origin main
    ```
