@@ -13,7 +13,8 @@
     .admin-head h1 { font-size: 20px; margin: 0; }
     .admin-head .who { font-size: 13px; color: var(--muted, #868e96); }
     .btn { border: 1px solid var(--border, #e9ecef); background: #fff; color: var(--text, #212529);
-           padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+           padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 14px;
+           white-space: nowrap; height: 36px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; }
     .btn:hover { border-color: var(--accent, #ff7a45); }
     .btn-primary { background: var(--accent, #ff7a45); color: #fff; border-color: var(--accent, #ff7a45); }
     .btn-primary:hover { opacity: .92; }
@@ -253,7 +254,7 @@
           <input id="u-email" type="email" placeholder="作者邮箱" style="width:100%;padding:7px 9px;margin:4px 0;border:1px solid var(--border,#e9ecef);border-radius:8px" />
           <input id="u-password" type="password" placeholder="密码（至少6位）" style="width:100%;padding:7px 9px;margin:4px 0;border:1px solid var(--border,#e9ecef);border-radius:8px" />
           <input id="u-name" placeholder="显示名（可选）" style="width:100%;padding:7px 9px;margin:4px 0;border:1px solid var(--border,#e9ecef);border-radius:8px" />
-          <button class="btn btn-primary btn-sm" type="submit" style="width:100%">添加作者</button>
+          <button class="btn btn-primary" type="submit" style="width:100%">添加作者</button>
         </form>
         <div>${users.map(u => `<div class="post-list-item"><div class="t">${esc(u.display_name)}</div><div class="d">${esc(u.email)} · ${u.role}</div></div>`).join('')}</div>`;
       $('#user-form').onsubmit = createUser;
@@ -271,12 +272,12 @@
           <input id="f-excerpt" placeholder="摘要（可选）" value="${p ? esc(p.excerpt || '') : ''}" />
           <textarea id="f-content" placeholder="正文（Markdown）">${p ? esc(p.content || '') : ''}</textarea>
           <div style="display:flex;gap:10px;align-items:center">
-            <select id="f-status" style="padding:7px 9px;border:1px solid var(--border,#e9ecef);border-radius:8px">
+            <select id="f-status" style="height:36px;padding:0 9px;border:1px solid var(--border,#e9ecef);border-radius:8px;font-size:14px;background:#fff">
               <option value="published" ${p && p.status==='published' ? 'selected':''}>已发布</option>
               <option value="draft" ${p && p.status==='draft' ? 'selected':''}>草稿</option>
             </select>
             <button class="btn btn-primary" type="submit">保存</button>
-            <label style="font-size:13px;color:var(--muted,#868e96)"><input type="checkbox" id="f-preview-toggle" /> 预览</label>
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted,#868e96);height:36px;cursor:pointer"><input type="checkbox" id="f-preview-toggle" style="width:16px;height:16px;margin:0" /> 预览</label>
           </div>
           <div class="status" id="status"></div>
           <div class="preview hidden" id="preview"></div>
