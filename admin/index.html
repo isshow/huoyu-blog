@@ -272,7 +272,7 @@
           <input id="f-excerpt" placeholder="摘要（可选）" value="${p ? esc(p.excerpt || '') : ''}" />
           <textarea id="f-content" placeholder="正文（Markdown）">${p ? esc(p.content || '') : ''}</textarea>
           <div style="display:flex;gap:10px;align-items:center">
-            <select id="f-status" style="height:36px;padding:0 9px;border:1px solid var(--border,#e9ecef);border-radius:8px;font-size:14px;background:#fff">
+            <select id="f-status" style="height:36px;padding:0 28px 0 11px;border:1px solid var(--border,#e9ecef);border-radius:8px;font-size:14px;background:#fff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23666' d='M0 0h10L5 6z'/%3E%3C/svg%3E\") no-repeat right 10px center;appearance:none;-webkit-appearance:none">
               <option value="published" ${p && p.status==='published' ? 'selected':''}>已发布</option>
               <option value="draft" ${p && p.status==='draft' ? 'selected':''}>草稿</option>
             </select>
