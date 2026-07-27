@@ -2,7 +2,7 @@
 // 已存在用户则拒绝（防止被滥用重复创建）。
 import { json, error, readBody, hashPassword, createSession, sessionCookie } from '../_lib/auth.js';
 
-export async function onRequestPost(request, env) {
+export async function onRequestPost({ request, env }) {
   const db = env.DB;
   const existing = await db.prepare('SELECT COUNT(*) AS c FROM users').first();
   if (existing && existing.c > 0) return error('系统已初始化，请直接登录', 403);

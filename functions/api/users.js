@@ -3,7 +3,7 @@
 //   POST —— 管理员创建作者账号（邮箱 + 密码 + 显示名）
 import { json, error, readBody, hashPassword, getUserFromRequest } from '../_lib/auth.js';
 
-export async function onRequestGet(request, env) {
+export async function onRequestGet({ request, env }) {
   const db = env.DB;
   const me = await getUserFromRequest(request, db);
   if (!me || me.role !== 'admin') return error('需要管理员权限', 403);
@@ -13,7 +13,7 @@ export async function onRequestGet(request, env) {
   return json({ users: rows.results || [] });
 }
 
-export async function onRequestPost(request, env) {
+export async function onRequestPost({ request, env }) {
   const db = env.DB;
   const me = await getUserFromRequest(request, db);
   if (!me || me.role !== 'admin') return error('需要管理员权限', 403);

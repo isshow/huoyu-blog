@@ -8,9 +8,9 @@ import { rowToPost } from '../../_lib/posts.js';
 const SELECT = `SELECT p.*, u.display_name AS author_name
                FROM posts p LEFT JOIN users u ON u.id = p.author_id`;
 
-export async function onRequestGet(request, env, ctx) {
+export async function onRequestGet({ request, env, params }) {
   const db = env.DB;
-  const id = ctx.params.id;
+  const id = params.id;
   const me = await getUserFromRequest(request, db);
   const row = await db.prepare(`${SELECT} WHERE p.id = ?`).bind(id).first();
   if (!row) return error('文章不存在', 404);
@@ -18,12 +18,12 @@ export async function onRequestGet(request, env, ctx) {
   return json({ post: rowToPost(row, { withContent: true }) });
 }
 
-export async function onRequestPut(request, env, ctx) {
+export async function onRequestPut({ request, env, params }) {
   const db = env.DB;
   const me = await getUserFromRequest(request, db);
   if (!me) return error('请先登录', 401);
 
-  const id = ctx.params.id;
+  const id = params.id;
   const row = await db.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first();
   if (!row) return error('文章不存在', 404);
   if (me.role !== 'admin' && row.author_id !== me.id) return error('只能修改自己的文章', 403);
@@ -52,12 +52,12 @@ export async function onRequestPut(request, env, ctx) {
   return json({ ok: true });
 }
 
-export async function onRequestDelete(request, env, ctx) {
+export async function onRequestDelete({ request, env, params }) {
   const db = env.DB;
   const me = await getUserFromRequest(request, db);
   if (!me || me.role !== 'admin') return error('需要管理员权限', 403);
 
-  const id = ctx.params.id;
+  const id = params.id;
   const row = await db.prepare('SELECT id FROM posts WHERE id = ?').bind(id).first();
   if (!row) return error('文章不存在', 404);
   await db.prepare('DELETE FROM posts WHERE id = ?').bind(id).run();

@@ -1,7 +1,7 @@
 // POST /api/auth/login —— 邮箱 + 密码登录，成功后下发会话 Cookie。
 import { json, error, readBody, verifyPassword, createSession, sessionCookie, getUserFromRequest } from '../../_lib/auth.js';
 
-export async function onRequestPost(request, env) {
+export async function onRequestPost({ request, env }) {
   const db = env.DB;
   const body = await readBody(request);
   const email = String(body.email || '').trim().toLowerCase();

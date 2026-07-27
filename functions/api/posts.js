@@ -7,7 +7,7 @@ import { rowToPost, makeId } from '../_lib/posts.js';
 const SELECT = `SELECT p.*, u.display_name AS author_name
                FROM posts p LEFT JOIN users u ON u.id = p.author_id`;
 
-export async function onRequestGet(request, env) {
+export async function onRequestGet({ request, env }) {
   const db = env.DB;
   const me = await getUserFromRequest(request, db);
   const where = me ? '' : ' WHERE p.status = "published"';
@@ -18,7 +18,7 @@ export async function onRequestGet(request, env) {
   return json({ posts });
 }
 
-export async function onRequestPost(request, env) {
+export async function onRequestPost({ request, env }) {
   const db = env.DB;
   const me = await getUserFromRequest(request, db);
   if (!me) return error('请先登录', 401);
