@@ -20,6 +20,7 @@ export function rowToPost(row, { withContent = false } = {}) {
     author_id: row.author_id,
     author_name: row.author_name || '佚名',
     status: row.status,
+    views: row.views || 0,
     updated_at: row.updated_at,
   };
   if (withContent) base.content = row.content || '';

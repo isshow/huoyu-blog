@@ -76,6 +76,7 @@
     let posts = [];         // 文章列表
     let users = [];         // 作者列表（管理员）
     let editingId = null;   // 正在编辑的文章 id（null=新建）
+    let sidebarQ = '';      // 后台文章列表搜索关键字
 
     function setStatus(msg, kind) {
       const el = $('#status');
@@ -160,6 +161,13 @@
       if (editingId === id) editingId = null;
       await loadAll(); renderEditor();
     }
+    async function deleteUser(id) {
+      if (!confirm('确定删除该作者账号？其文章作者将变为「佚名」。')) return;
+      const r = await api('/api/users/' + encodeURIComponent(id), { method: 'DELETE' });
+      const d = await r.json();
+      if (!r.ok) { alert(d.error || '删除失败'); return; }
+      await loadAll(); renderAuthors();
+    }
     async function createUser(e) {
       e.preventDefault();
       const email = $('#u-email').value.trim();
@@ -218,6 +226,7 @@
         <div class="layout">
           <div>
             <div class="section-title">文章（${posts.length}）</div>
+            <input id="sidebar-search" placeholder="搜索文章标题…" style="width:100%;padding:7px 9px;margin:0 0 10px;border:1px solid var(--border,#e9ecef);border-radius:8px;font-size:13px" />
             <div class="card" id="sidebar"></div>
             ${me.role === 'admin' ? `
               <div class="section-title">作者管理</div>
@@ -227,13 +236,16 @@
         </div>`;
       $('#btn-logout').onclick = doLogout;
       $('#btn-new').onclick = () => { editingId = null; renderEditor(); };
+      const sbSearch = $('#sidebar-search');
+      if (sbSearch) sbSearch.oninput = () => { sidebarQ = sbSearch.value.trim().toLowerCase(); renderSidebar(); };
       renderSidebar();
       if (me.role === 'admin') renderAuthors();
       renderEditor();
     }
     function renderSidebar() {
       const sb = $('#sidebar'); if (!sb) return;
-      sb.innerHTML = posts.map(p => `
+      const list = posts.filter(p => !sidebarQ || (p.title + ' ' + (p.tags || []).join(' ')).toLowerCase().includes(sidebarQ));
+      sb.innerHTML = list.map(p => `
         <div class="post-list-item">
           <div style="overflow:hidden">
             <div class="t">${esc(p.title)}</div>
@@ -256,8 +268,9 @@
           <input id="u-name" placeholder="显示名（可选）" style="width:100%;padding:7px 9px;margin:4px 0;border:1px solid var(--border,#e9ecef);border-radius:8px" />
           <button class="btn btn-primary" type="submit" style="width:100%">添加作者</button>
         </form>
-        <div>${users.map(u => `<div class="post-list-item"><div class="t">${esc(u.display_name)}</div><div class="d">${esc(u.email)} · ${u.role}</div></div>`).join('')}</div>`;
+        <div>${users.map(u => `<div class="post-list-item"><div class="t">${esc(u.display_name)}</div><div class="d">${esc(u.email)} · ${u.role}</div>${me.role === 'admin' && String(me.id) !== String(u.id) ? `<button class="btn btn-sm btn-danger" data-deluser="${u.id}">删除</button>` : ''}</div>`).join('')}</div>`;
       $('#user-form').onsubmit = createUser;
+      a.querySelectorAll('[data-deluser]').forEach(b => b.onclick = () => deleteUser(b.dataset.deluser));
     }
     function renderEditor() {
       const ed = $('#editor'); if (!ed) return;

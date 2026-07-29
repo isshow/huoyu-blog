@@ -36,14 +36,13 @@
   const PAGE_SIZE = 3;     // 每页文章数
   const state = { tag: null, q: '', page: 1 };  // 当前标签过滤 / 搜索关键字 / 页码
 
-  // 阅读量统计（localStorage 本机计数；离线/双击打开也可用）
-  function getViews(id) {
-    try { return parseInt(localStorage.getItem('huoyu-views:' + id) || '0', 10) || 0; }
-    catch (e) { return 0; }
-  }
-  function bumpViews(id) {
-    try { const n = getViews(id) + 1; localStorage.setItem('huoyu-views:' + id, String(n)); return n; }
-    catch (e) { return 0; }
+  // 阅读量：由后端 /api/posts/:id/views 持久化统计（真实全局计数）
+  async function fetchViews(id, fallback) {
+    try {
+      const r = await fetch('/api/posts/' + encodeURIComponent(id) + '/views', { method: 'POST' });
+      if (r.ok) { const d = await r.json(); return d.views; }
+    } catch (e) {}
+    return fallback || 0;
   }
 
   // Giscus 评论系统（基于 GitHub Discussions），默认关闭，启用后文章详情页加载
@@ -104,7 +103,7 @@
         <div class="post-meta">
           <span class="post-date">${esc(post.date)}</span>
           ${post.tags.map(t => tagPill(t, false)).join('')}
-          ${getViews(post.id) > 0 ? `<span class="post-views">👁 ${getViews(post.id)}</span>` : ''}
+          ${post.views > 0 ? `<span class="post-views">👁 ${post.views}</span>` : ''}
         </div>
       </article>`;
   }
@@ -222,7 +221,7 @@
       if (!post) { app.innerHTML = `<div class="empty">文章不存在。<a href="#/">返回首页</a></div>`; return; }
       idx = -1; // 直接拉取的没有上下文，不显示上下篇
     }
-    const views = bumpViews(post.id);
+    const views = await fetchViews(post.id, post.views);
     const older = idx >= 0 ? POSTS[idx + 1] : null; // 时间上更早
     const newer = idx >= 0 ? POSTS[idx - 1] : null; // 时间上更新
     const postNav = `
@@ -244,16 +243,56 @@
             <h1>${esc(post.title)}</h1>
             <div class="post-meta">
               <span class="post-date">${esc(post.date)}</span>
+              <span class="post-author">${esc(post.author_name || '佚名')}</span>
               ${post.tags.map(t => tagPill(t, false)).join('')}
               <span class="post-views">👁 阅读 ${views}</span>
             </div>
           </header>
           <div class="markdown">${clean}</div>
         </article>${postNav}`;
-      // 代码高亮
-      app.querySelectorAll('pre code').forEach(block => {
-        try { window.hljs.highlightElement(block); } catch (e) {}
+      // 代码高亮 + 复制按钮
+      app.querySelectorAll('.markdown pre').forEach(pre => {
+        try { window.hljs.highlightElement(pre.querySelector('code')); } catch (e) {}
+        const btn = document.createElement('button');
+        btn.className = 'code-copy';
+        btn.type = 'button';
+        btn.textContent = '复制';
+        btn.addEventListener('click', async () => {
+          const code = pre.querySelector('code');
+          try {
+            await navigator.clipboard.writeText(code ? code.innerText : pre.innerText);
+            btn.textContent = '已复制';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
+          } catch (e) { btn.textContent = '失败'; }
+        });
+        pre.appendChild(btn);
       });
+      // 目录 TOC（h2/h3）
+      const md = app.querySelector('.markdown');
+      if (md) {
+        const heads = md.querySelectorAll('h2, h3');
+        if (heads.length > 1) {
+          const toc = document.createElement('nav');
+          toc.className = 'toc';
+          let html = '<div class="toc-title">目录</div><ol>';
+          heads.forEach((h, i) => {
+            if (!h.id) h.id = 'h-' + i;
+            const lvl = h.tagName === 'H3' ? ' lvl-3' : '';
+            html += `<li class="${lvl.trim()}"><a href="#${h.id}" data-toc>${esc(h.textContent)}</a></li>`;
+          });
+          html += '</ol>';
+          toc.innerHTML = html;
+          toc.addEventListener('click', (e) => {
+            const a = e.target.closest('[data-toc]');
+            if (!a) return;
+            e.preventDefault();
+            const el = document.getElementById(a.getAttribute('href').slice(1));
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          });
+          md.parentNode.insertBefore(toc, md);
+        }
+      }
       window.scrollTo(0, 0);
       mountGiscus();
     } catch (e) {
@@ -261,14 +300,19 @@
     }
   }
 
-  function renderAbout() {
+  async function renderAbout() {
     setActiveNav('about');
+    let owner = '火羽';
+    try {
+      const r = await fetch('/api/site');
+      if (r.ok) { const d = await r.json(); owner = d.owner || owner; }
+    } catch (e) {}
     const md = `
 # 关于火羽
 
 <div class="avatar">火</div>
 
-你好，我是**火火**，一个喜欢捣鼓 Android 与前端开发的工程师。
+你好，我是 **${owner}**，这个博客的作者。
 
 ## 我在做什么
 
