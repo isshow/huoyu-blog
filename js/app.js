@@ -412,9 +412,15 @@
 
   boot();
 
-  // 把构建版本号写到页脚,一眼能看到当前加载的是哪个版本
+  // 把构建版本号写到页脚 + 顶部横幅,刷新完第一眼就能看到当前是哪个版本
   const tag = document.getElementById('build-tag');
   if (tag) tag.textContent = BUILD;
+  const banner = document.getElementById('build-banner');
+  if (banner) {
+    banner.textContent = '✅ 火羽 ' + BUILD + ' · JS 已运行';
+    banner.style.background = '#1a7f37';
+    setTimeout(() => { if (banner) banner.style.display = 'none'; }, 5000);
+  }
 
   // "卡住了?点这里重试" 按钮 — 清缓存 + 重新执行 boot
   const retry = document.getElementById('boot-retry');
