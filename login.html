@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>火羽 · 登录</title>
+  <meta name="robots" content="noindex" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    :root {
+      --bg: #fafafa;
+      --card: #ffffff;
+      --text: #212529;
+      --muted: #868e96;
+      --border: #e9ecef;
+      --accent: #ff7a45;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 360px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 26px 24px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+    .brand-mark {
+      width: 34px; height: 34px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--accent); color: #fff;
+      border-radius: 10px; font-weight: 700; font-size: 18px;
+    }
+    .brand-name { font-size: 18px; font-weight: 600; letter-spacing: .5px; }
+    h1 { font-size: 16px; text-align: center; font-weight: 600; margin: 0 0 18px; color: var(--text); }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tabs button {
+      flex: 1;
+      padding: 8px 0;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .tabs button.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 5px; }
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+    }
+    input:focus { border-color: var(--accent); }
+    .btn-primary {
+      width: 100%;
+      margin-top: 18px;
+      padding: 11px 0;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .btn-primary:hover { opacity: .92; }
+    .btn-primary:disabled { opacity: .6; cursor: default; }
+    .status { font-size: 13px; margin-top: 12px; min-height: 18px; color: var(--muted); text-align: center; }
+    .status.err { color: #e03131; }
+    .status.ok { color: #2b8a3e; }
+    .back {
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .back:hover { color: var(--accent); }
+    .hidden { display: none !important; }
+    .hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: 6px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="brand">
+      <span class="brand-mark">火</span>
+      <span class="brand-name">火羽</span>
+    </div>
+    <h1>登录管理后台</h1>
+
+    <div class="tabs">
+      <button type="button" id="tab-login" class="active">登录</button>
+      <button type="button" id="tab-setup" class="hidden">首次初始化</button>
+    </div>
+
+    <form id="login-form">
+      <label for="email">邮箱</label>
+      <input id="email" type="email" autocomplete="username" placeholder="you@example.com" required />
+      <label for="password">密码</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="••••••" required />
+      <button class="btn-primary" type="submit" id="login-btn">登录</button>
+    </form>
+
+    <form id="setup-form" class="hidden">
+      <label for="s-email">管理员邮箱</label>
+      <input id="s-email" type="email" placeholder="you@example.com" required />
+      <label for="s-password">密码（至少 6 位）</label>
+      <input id="s-password" type="password" placeholder="••••••" required />
+      <label for="s-name">显示名（可选）</label>
+      <input id="s-name" placeholder="博主" />
+      <button class="btn-primary" type="submit" id="setup-btn">创建管理员</button>
+      <p class="hint">仅在系统尚无任何账号时需要；创建后请用「登录」进入。</p>
+    </form>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <a class="back" href="/">← 返回博客首页</a>
+
+  <script>
+  (function () {
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    const statusEl = $('status');
+    const loginTab = $('tab-login');
+    const setupTab = $('tab-setup');
+    const loginForm = $('login-form');
+    const setupForm = $('setup-form');
+
+    const api = (path, opts) => fetch(path, Object.assign({
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+    }, opts));
+
+    function setStatus(msg, kind) {
+      statusEl.textContent = msg || '';
+      statusEl.className = 'status' + (kind ? ' ' + kind : '');
+    }
+
+    function showLogin() {
+      loginForm.classList.remove('hidden');
+      setupForm.classList.add('hidden');
+      loginTab.classList.add('active');
+      setupTab.classList.remove('active');
+    }
+    function showSetup() {
+      setupForm.classList.remove('hidden');
+      loginForm.classList.add('hidden');
+      setupTab.classList.add('active');
+      loginTab.classList.remove('active');
+    }
+
+    loginTab.onclick = showLogin;
+    setupTab.onclick = showSetup;
+
+    async function doLogin(e) {
+      e.preventDefault();
+      setStatus('登录中…');
+      $('login-btn').disabled = true;
+      try {
+        const r = await api('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: $('email').value.trim(),
+            password: $('password').value,
+          }),
+        });
+        const d = await r.json();
+        if (!r.ok) { setStatus(d.error || '登录失败', 'err'); $('login-btn').disabled = false; return; }
+        setStatus('登录成功，正在进入…', 'ok');
+        window.location.replace('/admin/');
+      } catch {
+        setStatus('网络错误，请重试', 'err');
+        $('login-btn').disabled = false;
+      }
+    }
+
+    async function doSetup(e) {
+      e.preventDefault();
+      setStatus('创建中…');
+      $('setup-btn').disabled = true;
+      try {
+        const r = await api('/api/setup', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: $('s-email').value.trim(),
+            password: $('s-password').value,
+            display_name: $('s-name').value.trim(),
+          }),
+        });
+        const d = await r.json();
+        if (!r.ok) { setStatus(d.error || '初始化失败', 'err'); $('setup-btn').disabled = false; return; }
+        setStatus('创建成功，正在进入…', 'ok');
+        window.location.replace('/admin/');
+      } catch {
+        setStatus('网络错误，请重试', 'err');
+        $('setup-btn').disabled = false;
+      }
+    }
+
+    loginForm.onsubmit = doLogin;
+    setupForm.onsubmit = doSetup;
+
+    // 探测系统是否已初始化：未初始化才展示「首次初始化」入口
+    (async function init() {
+      try {
+        const r = await api('/api/auth/me');
+        const d = await r.json();
+        if (d.initialized === false) {
+          setupTab.classList.remove('hidden');
+        }
+      } catch { /* 忽略：默认只显示登录 */ }
+    })();
+  })();
+  </script>
+</body>
+</html>
