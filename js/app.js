@@ -91,6 +91,9 @@
     }[c]));
   }
 
+  // 当前前端构建版本号（部署时手动改一下,确认浏览器拿到的是新版 JS）
+  const BUILD = 'v20260826-2';
+
   function tagPill(tag, active) {
     return `<a class="tag${active ? ' active' : ''}" href="#/tag/${encodeURIComponent(tag)}">${esc(tag)}</a>`;
   }
@@ -408,4 +411,18 @@
   }
 
   boot();
+
+  // 把构建版本号写到页脚,一眼能看到当前加载的是哪个版本
+  const tag = document.getElementById('build-tag');
+  if (tag) tag.textContent = BUILD;
+
+  // "卡住了?点这里重试" 按钮 — 清缓存 + 重新执行 boot
+  const retry = document.getElementById('boot-retry');
+  if (retry) retry.onclick = async () => {
+    retry.disabled = true;
+    retry.textContent = '重试中…';
+    loaded = false; POSTS = [];
+    try { await loadPosts(); boot(); }
+    catch (e) { retry.disabled = false; retry.textContent = '还是卡？按 F12 看 Console'; }
+  };
 })();

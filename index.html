@@ -39,12 +39,19 @@
   </div>
 
   <main class="container" id="app">
-    <div class="loading">加载中…</div>
+    <div class="loading">
+      <div>加载中…</div>
+      <button id="boot-retry" type="button" style="margin-top:14px;padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">
+        卡住了？点这里重试
+      </button>
+    </div>
   </main>
 
   <footer class="site-footer">
     <div class="container">
       <span>© <span id="year"></span> 火羽 · Fire Feather</span>
+      <span class="dot">·</span>
+      <span id="build-tag" style="font-family:monospace;opacity:.6;font-size:12px">…</span>
       <span class="dot">·</span>
       <span>用纯静态站点搭建，可部署到任意平台</span>
       <span class="dot">·</span>
@@ -52,10 +59,10 @@
     </div>
   </footer>
 
-  <script src="js/marked.min.js"></script>
-  <script src="js/purify.min.js"></script>
-  <script src="js/highlight.min.js"></script>
-  <script src="js/posts-data.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/marked.min.js?v=20260826"></script>
+  <script src="js/purify.min.js?v=20260826"></script>
+  <script src="js/highlight.min.js?v=20260826"></script>
+  <script src="js/posts-data.js?v=20260826"></script>
+  <script src="js/app.js?v=20260826"></script>
 </body>
 </html>
