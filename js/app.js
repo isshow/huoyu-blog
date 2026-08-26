@@ -112,20 +112,35 @@
     if (loaded) return POSTS;
     // 在线优先：后端 API（动态读取，发布即生效）
     try {
-      const res = await fetch('/api/posts', { cache: 'no-cache' });
-      if (res.ok) {
-        const data = await res.json();
-        POSTS = data.posts || [];
-      } else {
-        throw new Error('API ' + res.status);
+      // 用 manual 重定向模式，避免被 Cloudflare Access 登录页污染 API 响应
+      const res = await fetch('/api/posts', { cache: 'no-cache', redirect: 'manual' });
+      const ct = res.headers.get('content-type') || '';
+      const looksJson = ct.includes('application/json');
+      if (res.type === 'opaqueredirect' || res.status === 0 || (res.status >= 300 && res.status < 400) || !res.ok || !looksJson) {
+        throw new Error('API blocked: status=' + res.status + ' type=' + res.type);
       }
+      const data = await res.json();
+      POSTS = Array.isArray(data.posts) ? data.posts : [];
     } catch (e) {
-      // 回退：内联数据（边缘缓存失效/离线场景）
+      console.warn('[火羽] 线上 API 不可用，回退到内联数据：', e && e.message);
       POSTS = (window.POSTS_DATA && Array.isArray(window.POSTS_DATA)) ? window.POSTS_DATA.slice() : [];
+      // 给用户一个明确提示，而不是永远加载中
+      showApiWarning(e && e.message);
     }
     POSTS.sort((a, b) => (a.date < b.date ? 1 : -1)); // 新到旧
     loaded = true;
     return POSTS;
+  }
+
+  let apiWarnedOnce = false;
+  function showApiWarning(msg) {
+    if (apiWarnedOnce) return;
+    apiWarnedOnce = true;
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;top:12px;right:12px;background:#fff3cd;color:#664d03;border:1px solid #ffe69c;padding:8px 14px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.08);max-width:340px;line-height:1.5';
+    el.innerHTML = '⚠️ 正在用缓存文章列表（最新发布的文章可能还没出来）。原因：' + (msg || '未知') + '。如果你刚后台发了文章，请稍后强制刷新。';
+    document.body.appendChild(el);
+    setTimeout(() => { try { el.remove(); } catch(e){} }, 6000);
   }
 
   function setActiveNav(name) {
@@ -215,8 +230,10 @@
     if (!post) {
       // 列表中没有（草稿 / 深链）：直接拉取单篇
       try {
-        const res = await fetch('/api/posts/' + encodeURIComponent(id), { cache: 'no-cache' });
-        if (res.ok) { const d = await res.json(); post = d.post || null; }
+const res = await fetch('/api/posts/' + encodeURIComponent(id), { cache: 'no-cache', redirect: 'manual' });
+      const ct2 = res.headers.get('content-type') || '';
+      if (!res.ok || res.type === 'opaqueredirect' || res.status === 0 || (res.status >= 300 && res.status < 400) || !ct2.includes('application/json')) throw new Error('blocked');
+      if (res.ok) { const d = await res.json(); post = d.post || null; }
       } catch (e) {}
       if (!post) { app.innerHTML = `<div class="empty">文章不存在。<a href="#/">返回首页</a></div>`; return; }
       idx = -1; // 直接拉取的没有上下文，不显示上下篇
