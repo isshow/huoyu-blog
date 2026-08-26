@@ -2,8 +2,8 @@
 // 供 functions/ 下的各路由 import 复用。
 
 const PBKDF2_ITERATIONS = 100000;
-const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 天（勾选「记住我」）
-const SESSION_TTL_SHORT = 2 * 60 * 60 * 1000; // 2 小时（未勾选：关闭浏览器/短期后需重新登录）
+export const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 天（勾选「记住我」）
+export const SESSION_TTL_SHORT = 2 * 60 * 60 * 1000; // 2 小时（未勾选：关闭浏览器/短期后需重新登录）
 export const COOKIE_NAME = 'huoyu_session';
 
 // ---------- 响应助手 ----------
