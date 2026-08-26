@@ -2,7 +2,8 @@
 // 供 functions/ 下的各路由 import 复用。
 
 const PBKDF2_ITERATIONS = 100000;
-const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 天
+const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 天（勾选「记住我」）
+const SESSION_TTL_SHORT = 2 * 60 * 60 * 1000; // 2 小时（未勾选：关闭浏览器/短期后需重新登录）
 export const COOKIE_NAME = 'huoyu_session';
 
 // ---------- 响应助手 ----------
@@ -51,19 +52,19 @@ export async function verifyPassword(password, stored) {
 }
 
 // ---------- 会话 ----------
-export async function createSession(db, userId) {
+export async function createSession(db, userId, ttl = SESSION_TTL) {
   const token = bufToHex(crypto.getRandomValues(new Uint8Array(32)));
-  const expires = Date.now() + SESSION_TTL;
+  const expires = Date.now() + ttl;
   await db
     .prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)')
     .bind(token, userId, expires)
     .run();
   return { token, expires };
 }
-export function sessionCookie(token, secure = true) {
+export function sessionCookie(token, secure = true, ttl = SESSION_TTL) {
   // 本地 wrangler pages dev 是 http，Secure 会让浏览器拒收，需按协议判断。
   const sec = secure ? ' Secure' : '';
-  return `${COOKIE_NAME}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${Math.floor(SESSION_TTL / 1000)}${sec}`;
+  return `${COOKIE_NAME}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${Math.floor(ttl / 1000)}${sec}`;
 }
 export function clearCookie(secure = true) {
   const sec = secure ? ' Secure' : '';

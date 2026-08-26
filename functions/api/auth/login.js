@@ -1,5 +1,6 @@
 // POST /api/auth/login —— 邮箱 + 密码登录，成功后下发会话 Cookie。
-import { json, error, readBody, verifyPassword, createSession, sessionCookie, getUserFromRequest } from '../../_lib/auth.js';
+// body.remember=true 时会话 30 天，否则 2 小时（关闭浏览器/短期后需重新登录）。
+import { json, error, readBody, verifyPassword, createSession, sessionCookie, SESSION_TTL, SESSION_TTL_SHORT } from '../../_lib/auth.js';
 
 export async function onRequestPost({ request, env }) {
   const db = env.DB;
@@ -13,12 +14,13 @@ export async function onRequestPost({ request, env }) {
   const ok = await verifyPassword(password, user.password_hash);
   if (!ok) return error('账号或密码错误', 401);
 
-  const { token } = await createSession(db, user.id);
+  const ttl = body.remember === true ? SESSION_TTL : SESSION_TTL_SHORT;
+  const { token } = await createSession(db, user.id, ttl);
   const secure = new URL(request.url).protocol === 'https:';
   const res = json({
     ok: true,
     user: { id: user.id, email: user.email, display_name: user.display_name, role: user.role },
   });
-  res.headers.append('Set-Cookie', sessionCookie(token, secure));
+  res.headers.append('Set-Cookie', sessionCookie(token, secure, ttl));
   return res;
 }

@@ -126,6 +126,9 @@
       <input id="email" type="email" autocomplete="username" placeholder="you@example.com" required />
       <label for="password">密码</label>
       <input id="password" type="password" autocomplete="current-password" placeholder="••••••" required />
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin:12px 0 0;cursor:pointer">
+        <input type="checkbox" id="remember" checked style="width:15px;height:15px;margin:0" /> 记住我（30 天免登）
+      </label>
       <button class="btn-primary" type="submit" id="login-btn">登录</button>
     </form>
 
@@ -191,6 +194,7 @@
           body: JSON.stringify({
             email: $('email').value.trim(),
             password: $('password').value,
+            remember: $('remember').checked,
           }),
         });
         const d = await r.json();

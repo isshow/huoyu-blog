@@ -48,6 +48,10 @@
     .status.err { color: #e03131; }
     .section-title { font-size: 13px; font-weight: 600; color: var(--muted, #868e96); margin: 18px 0 6px; }
     .hidden { display: none !important; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+    .modal-card { width: 100%; max-width: 340px; background: var(--card, #fff); border: 1px solid var(--border, #e9ecef); border-radius: 14px; padding: 22px; }
+    .modal-card label { display: block; font-size: 13px; color: var(--muted, #868e96); margin: 10px 0 5px; }
+    .modal-card input { width: 100%; padding: 9px 11px; margin: 0; border: 1px solid var(--border, #e9ecef); border-radius: 8px; font-size: 14px; font-family: inherit; box-sizing: border-box; }
   </style>
 </head>
 <body>
@@ -57,6 +61,23 @@
       <div class="who" id="who"></div>
     </div>
     <div id="root"></div>
+  </div>
+
+  <div id="pw-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 style="margin:0 0 14px;font-size:16px">修改密码</h3>
+      <label>当前密码</label>
+      <input id="pw-old" type="password" autocomplete="current-password" />
+      <label>新密码（至少 6 位）</label>
+      <input id="pw-new" type="password" autocomplete="new-password" />
+      <label>确认新密码</label>
+      <input id="pw-confirm" type="password" autocomplete="new-password" />
+      <div class="status" id="pw-status"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+        <button class="btn" id="pw-cancel" type="button">取消</button>
+        <button class="btn btn-primary" id="pw-save" type="button">保存</button>
+      </div>
+    </div>
   </div>
 
   <script src="../js/marked.min.js"></script>
@@ -221,6 +242,7 @@
       root.innerHTML = `
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">
           <button class="btn" id="btn-new">+ 新建文章</button>
+          <button class="btn" id="btn-pw">修改密码</button>
           <button class="btn btn-ghost" id="btn-logout">退出</button>
         </div>
         <div class="layout">
@@ -235,6 +257,7 @@
           <div class="card editor" id="editor"></div>
         </div>`;
       $('#btn-logout').onclick = doLogout;
+      $('#btn-pw').onclick = openPwModal;
       $('#btn-new').onclick = () => { editingId = null; renderEditor(); };
       const sbSearch = $('#sidebar-search');
       if (sbSearch) sbSearch.oninput = () => { sidebarQ = sbSearch.value.trim().toLowerCase(); renderSidebar(); };
@@ -309,6 +332,35 @@
       return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
+    // ---------- 修改密码 ----------
+    function openPwModal() {
+      $('#pw-old').value = ''; $('#pw-new').value = ''; $('#pw-confirm').value = '';
+      setPwStatus('');
+      $('#pw-modal').classList.remove('hidden');
+    }
+    function closePwModal() { $('#pw-modal').classList.add('hidden'); }
+    function setPwStatus(msg, kind) {
+      const el = $('#pw-status');
+      el.textContent = msg || '';
+      el.className = 'status' + (kind ? ' ' + kind : '');
+    }
+    async function changePassword() {
+      const oldP = $('#pw-old').value;
+      const newP = $('#pw-new').value;
+      const confirmP = $('#pw-confirm').value;
+      if (newP.length < 6) { setPwStatus('新密码至少 6 位', 'err'); return; }
+      if (newP !== confirmP) { setPwStatus('两次输入的新密码不一致', 'err'); return; }
+      setPwStatus('保存中…');
+      const r = await api('/api/auth/change-password', { method: 'POST',
+        body: JSON.stringify({ old_password: oldP, new_password: newP }) });
+      const d = await r.json();
+      if (!r.ok) { setPwStatus(d.error || '修改失败', 'err'); return; }
+      setPwStatus('密码已更新 ✓', 'ok');
+      setTimeout(closePwModal, 900);
+    }
+
+    $('#pw-cancel').onclick = closePwModal;
+    $('#pw-save').onclick = changePassword;
     checkAuth();
   })();
   </script>
