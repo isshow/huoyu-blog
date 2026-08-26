@@ -299,9 +299,9 @@
         pre.appendChild(btn);
       });
       // 目录 TOC（h2/h3）
-      const md = app.querySelector('.markdown');
-      if (md) {
-        const heads = md.querySelectorAll('h2, h3');
+      const mdRoot = app.querySelector('.markdown');
+      if (mdRoot) {
+        const heads = mdRoot.querySelectorAll('h2, h3');
         if (heads.length > 1) {
           const toc = document.createElement('nav');
           toc.className = 'toc';
