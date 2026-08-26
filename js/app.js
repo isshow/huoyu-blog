@@ -108,12 +108,22 @@
       </article>`;
   }
 
+  // 带超时的 fetch：避免某个请求挂死导致永远"加载中"
+  function fetchWithTimeout(url, opts, ms) {
+    return new Promise((resolve, reject) => {
+      const ctl = new AbortController();
+      const t = setTimeout(() => { try { ctl.abort(); } catch (e) {} reject(new Error('timeout ' + ms + 'ms')); }, ms);
+      fetch(url, Object.assign({}, opts || {}, { signal: ctl.signal }))
+        .then(r => { clearTimeout(t); resolve(r); })
+        .catch(e => { clearTimeout(t); reject(e); });
+    });
+  }
+
   async function loadPosts() {
     if (loaded) return POSTS;
-    // 在线优先：后端 API（动态读取，发布即生效）
+    // 在线优先：后端 API（动态读取，发布即生效）。5 秒超时。
     try {
-      // 用 manual 重定向模式，避免被 Cloudflare Access 登录页污染 API 响应
-      const res = await fetch('/api/posts', { cache: 'no-cache', redirect: 'manual' });
+      const res = await fetchWithTimeout('/api/posts', { cache: 'no-cache', redirect: 'manual' }, 5000);
       const ct = res.headers.get('content-type') || '';
       const looksJson = ct.includes('application/json');
       if (res.type === 'opaqueredirect' || res.status === 0 || (res.status >= 300 && res.status < 400) || !res.ok || !looksJson) {
@@ -230,10 +240,10 @@
     if (!post) {
       // 列表中没有（草稿 / 深链）：直接拉取单篇
       try {
-const res = await fetch('/api/posts/' + encodeURIComponent(id), { cache: 'no-cache', redirect: 'manual' });
-      const ct2 = res.headers.get('content-type') || '';
-      if (!res.ok || res.type === 'opaqueredirect' || res.status === 0 || (res.status >= 300 && res.status < 400) || !ct2.includes('application/json')) throw new Error('blocked');
-      if (res.ok) { const d = await res.json(); post = d.post || null; }
+        const res = await fetchWithTimeout('/api/posts/' + encodeURIComponent(id), { cache: 'no-cache', redirect: 'manual' }, 5000);
+        const ct2 = res.headers.get('content-type') || '';
+        if (!res.ok || res.type === 'opaqueredirect' || res.status === 0 || (res.status >= 300 && res.status < 400) || !ct2.includes('application/json')) throw new Error('blocked');
+        const d = await res.json(); post = d.post || null;
       } catch (e) {}
       if (!post) { app.innerHTML = `<div class="empty">文章不存在。<a href="#/">返回首页</a></div>`; return; }
       idx = -1; // 直接拉取的没有上下文，不显示上下篇
