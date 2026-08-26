@@ -320,7 +320,7 @@
             const el = document.getElementById(a.getAttribute('href').slice(1));
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           });
-          md.parentNode.insertBefore(toc, md);
+          mdRoot.parentNode.insertBefore(toc, mdRoot);
         }
       }
       window.scrollTo(0, 0);
