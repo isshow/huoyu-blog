@@ -115,30 +115,9 @@
       } catch { me = null; }
       render();
     }
-    async function doLogin(e) {
-      e.preventDefault();
-      const email = $('#email').value.trim();
-      const password = $('#password').value;
-      const r = await api('/api/auth/login', { method: 'POST',
-        body: JSON.stringify({ email, password }) });
-      const d = await r.json();
-      if (!r.ok) { setStatus(d.error || '登录失败', 'err'); return; }
-      me = d.user; render();
-    }
-    async function doSetup(e) {
-      e.preventDefault();
-      const email = $('#s-email').value.trim();
-      const password = $('#s-password').value;
-      const display_name = $('#s-name').value.trim() || '博主';
-      const r = await api('/api/setup', { method: 'POST',
-        body: JSON.stringify({ email, password, display_name }) });
-      const d = await r.json();
-      if (!r.ok) { setStatus(d.error || '初始化失败', 'err'); return; }
-      me = d.user; render();
-    }
     async function doLogout() {
       await api('/api/auth/logout', { method: 'POST' });
-      me = null; posts = []; users = []; render();
+      window.location.replace('/login.html');
     }
 
     // ---------- 数据 ----------
@@ -205,38 +184,15 @@
     // ---------- 渲染 ----------
     function render() {
       whoEl.innerHTML = me ? `已登录：${me.display_name}（${me.role === 'admin' ? '管理员' : '作者'}）` : '';
-      if (!me) return renderLogin();
-      loadAll().then(renderApp).catch(err => renderLogin(err));
-    }
-    function renderLogin(err) {
-      root.innerHTML = `
-        <div class="card login-box">
-          <div class="tabs">
-            <button class="btn btn-primary" id="tab-login">登录</button>
-            <button class="btn" id="tab-setup">首次初始化</button>
-          </div>
-          <div id="login-pane">
-            <form id="login-form">
-              <label>邮箱</label><input id="email" type="email" required />
-              <label>密码</label><input id="password" type="password" required />
-              <button class="btn btn-primary" style="width:100%" type="submit">登录</button>
-            </form>
-          </div>
-          <div id="setup-pane" class="hidden">
-            <form id="setup-form">
-              <label>管理员邮箱</label><input id="s-email" type="email" required />
-              <label>密码（至少 6 位）</label><input id="s-password" type="password" required />
-              <label>显示名</label><input id="s-name" placeholder="博主" />
-              <button class="btn btn-primary" style="width:100%" type="submit">创建管理员</button>
-            </form>
-            <p class="status">仅在系统尚无任何账号时需要；已有账号请走「登录」。</p>
-          </div>
-          <div id="status" class="status ${err ? 'err' : ''}">${err ? String(err.message || err) : ''}</div>
-        </div>`;
-      $('#tab-login').onclick = () => { $('#login-pane').classList.remove('hidden'); $('#setup-pane').classList.add('hidden'); $('#tab-login').classList.add('btn-primary'); $('#tab-setup').classList.remove('btn-primary'); };
-      $('#tab-setup').onclick = () => { $('#setup-pane').classList.remove('hidden'); $('#login-pane').classList.add('hidden'); $('#tab-setup').classList.add('btn-primary'); $('#tab-login').classList.remove('btn-primary'); };
-      $('#login-form').onsubmit = doLogin;
-      $('#setup-form').onsubmit = doSetup;
+      if (!me) {
+        // 未登录 → 直接跳独立登录页（统一入口，避免双 UI）
+        window.location.replace('/login.html');
+        return;
+      }
+      loadAll().then(renderApp).catch(() => {
+        // session 可能在途中过期
+        window.location.replace('/login.html');
+      });
     }
     function renderApp() {
       root.innerHTML = `
